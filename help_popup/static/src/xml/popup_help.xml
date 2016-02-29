@@ -1,8 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates>
-    <t t-name="ViewManagerAction" t-extend="ViewManagerAction">
-        <t t-jquery="h2.oe_view_title" t-operation="before">
-            <span> &amp;nbsp; </span><span class="oe_button oe_highlight view_help">?</span>
+    <t t-name="ViewManagerAction" t-extend="ViewManager">
+        <t t-jquery="ul.oe_view_manager_switch" t-operation="after">
+            <ul class="oe_view_manager_switch oe_button_group oe_right help_button">
+                <li class="oe_e">
+                    <a class="view_help">
+                        b
+                    </a>
+                </li>
+            </ul>
+            <ul class="oe_view_manager_switch oe_button_group oe_right edit_help_button">
+                <li class="oe_e">
+                    <a class="edit_help">
+                        j
+                    </a>
+                </li>
+            </ul>
         </t>
     </t>
 </templates>

@@ -25,11 +25,12 @@ from openerp import models, fields
 class IrActionsActwindow(models.Model):
     _inherit = 'ir.actions.act_window'
 
-    enduser_help = fields.Html(
+    enduser_help = fields.Text(
         string="End User Help",
+        widget="html",
         help="Use this field to add custom content for documentation purpose\n"
-             "mainly by power users ")
+             "mainly for power users ")
     advanced_help = fields.Text(
         string="Advanced Help",
         help="Use this field to add custom content for documentation purpose\n"
-             "mainly by developers")
+             "mainly for developers")

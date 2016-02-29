@@ -3,38 +3,28 @@
 <openerp>
 <data noupdate="1">
 
-<template id="tpl_help">
+    <template id="tpl_help">
 
-<t t-call="report.html_container">
-<t t-call="report.internal_layout">
+        <t t-call="report.layout">
+        <t t-foreach="docs" t-as="o">
 
+            <div class="container">
+                <div>
+                    <div t-if="o.enduser_help" class="panel panel-default" id="enduser_help">
+                        <div class="panel-heading"><h3>User Help</h3></div>
+                        <div class="panel-body" t-raw="o.enduser_help"/>
+                    </div>
+                    <div t-if="o.advanced_help" class="panel panel-default" id="advanced_help">
+                        <div class="panel-heading"><h3>Advanced Help</h3></div>
+                        <div class="panel-body" t-raw="o.advanced_help"/>
+                    </div>
+                </div>
+            </div>
 
-<t t-foreach="docs" t-as="o">
+        <!--end foreach-->
+        </t>
+        </t>
 
-<div class="page">
-
-<div t-raw="o.enduser_help"/>
-
-<hr width="70%"/>
-
-<h3 t-if="o.advanced_help">Help from developer</h3>
-<div t-raw="o.advanced_help"/>
-
-<hr width="70%"/>
-
-<h3 t-if="o.help">Help from Odoo</h3>
-<div t-raw="o.help"/>
-
-</div>
-
-<!--end foreach-->
-</t>
-
-</t>
-</t>
-
-</template>
-
-
+    </template>
 </data>
 </openerp>
