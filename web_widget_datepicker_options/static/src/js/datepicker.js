@@ -16,38 +16,28 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-/*global openerp, _, $ */
 
-openerp.web_widget_datepicker_options = function (instance) {
-
+odoo.define('web_widget_datepicker_options.datepicker', function(require) {
     "use strict";
+    var Widget = require('web.datepicker');
 
-    instance.web.form.FieldDatetime.include({
-        initialize_content: function() {
-            this._super();
-            var self = this;
-            if (this.datewidget) {
-                if (typeof this.options.datepicker === 'object') {
-                    $.map(this.options.datepicker, function(value, key) {
-                        self.datewidget.picker('option', key, value);
-                    });
-                }
+    Widget.DateWidget.include({
+        init: function() {
+            this._super.apply(this, arguments);
+            if(typeof this.__parentedParent !== 'undefined' && this.__parentedParent.field.type === 'date' && this.__parentedParent.nodeOptions){
+                var datepicker = this.__parentedParent.nodeOptions.datepicker;
+                Object.assign(this.options, datepicker);
             }
-        }
+        },
     });
 
-    instance.web.form.FieldDate.include({
-        initialize_content: function() {
-            this._super();
-            var self = this;
-            if (this.datewidget) {
-                if (typeof this.options.datepicker === 'object') {
-                    $.map(this.options.datepicker, function(value, key) {
-                        self.datewidget.picker('option', key, value);
-                    });
-                }
+    Widget.DateTimeWidget.include({
+        init: function() {
+            this._super.apply(this, arguments);
+            if(typeof this.__parentedParent !== 'undefined' && this.__parentedParent.field.type === 'date' && this.__parentedParent.nodeOptions){
+                var datepicker = this.__parentedParent.nodeOptions.datepicker;
+                Object.assign(this.options, datepicker);
             }
-        }
+        },
     });
-};
-
+});
