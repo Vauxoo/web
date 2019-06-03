@@ -1,104 +1,135 @@
 odoo.define('web_export_view', function (require) {
-"use strict";
+    "use strict";
 
     var core = require('web.core');
     var Sidebar = require('web.Sidebar');
+    var session = require('web.session');
+    var crash_manager = require('web.crash_manager');
+
     var QWeb = core.qweb;
 
     var _t = core._t;
 
     Sidebar.include({
 
-        redraw: function () {
+        _redraw: function () {
             var self = this;
             this._super.apply(this, arguments);
-            if (self.getParent().ViewManager.active_view.type == 'list') {
-                self.$el.find('.o_dropdown').last().append(QWeb.render('WebExportTreeViewXls', {widget: self}));
-                self.$el.find('.export_treeview_xls').on('click', self.on_sidebar_export_treeview_xls);
+            if (self.getParent().renderer.viewType === 'list') {
+                session.user_has_group(
+                    'web_export_view.group_disallow_export_view_data_excel')
+                    .then(function (has_group) {
+                        if (!has_group) {
+                            self.$el.find('.o_dropdown')
+                                .last().append(QWeb.render(
+                                    'WebExportTreeViewXls', {widget: self}));
+                            self.$el.find('.export_treeview_xls').on('click',
+                                self.on_sidebar_export_treeview_xls);
+                        }
+                    });
             }
         },
 
         on_sidebar_export_treeview_xls: function () {
             // Select the first list of the current (form) view
             // or assume the main view is a list view and use that
-            var self = this,
-                view = this.getParent(),
+            var view = this.getParent(),
                 children = view.getChildren();
+            var c = crash_manager;
+
             if (children) {
                 children.every(function (child) {
-                    if (child.field && child.field.type == 'one2many') {
+                    if (child.field && child.field.type === 'one2many') {
                         view = child.viewmanager.views.list.controller;
-                        return false; // break out of the loop
+                        return false;
                     }
-                    if (child.field && child.field.type == 'many2many') {
+                    if (child.field && child.field.type === 'many2many') {
                         view = child.list_view;
-                        return false; // break out of the loop
+                        return false;
                     }
                     return true;
                 });
             }
             var export_columns_keys = [];
             var export_columns_names = [];
-            $.each(view.visible_columns, function () {
-                if (this.tag == 'field' && (this.widget === undefined || this.widget != 'handle')) {
-                    // non-fields like `_group` or buttons
-                    export_columns_keys.push(this.id);
-                    export_columns_names.push(this.string);
+            var column_index = 0;
+            var column_header_selector = '';
+            var isGrouped = view.renderer.state.groupedBy.length > 0;
+            $.each(view.renderer.columns, function () {
+                if (this.tag === 'field' &&
+                    (this.attrs.widget === undefined ||
+                        this.attrs.widget !== 'handle')) {
+                    export_columns_keys.push(column_index);
+                    var css_selector_index = isGrouped
+                        ? column_index+1 : column_index;
+                    column_header_selector = '.o_list_view > thead > tr> ' +
+                        'th:not([class*="o_list_record_selector"]):eq(' +
+                        css_selector_index + ')';
+                    export_columns_names.push(
+                        view.$el.find(column_header_selector)[0].textContent);
                 }
+                ++column_index;
             });
-            var rows = view.$el.find('.o_list_view > tbody > tr');
             var export_rows = [];
-            $.each(rows, function () {
-                var $row = $(this);
-                // find only rows with data
-                if ($row.attr('data-id')) {
-                    var export_row = [];
-                    var checked = $row.find('.o_list_record_selector input[type=checkbox]').is(':checked');
-                    if (children && checked === true) {
+            $.blockUI();
+            if (children) {
+                // Find only rows with data
+                view.$el.find('.o_list_view > tbody > tr.o_data_row:' +
+                    'has(.o_list_record_selector input:checkbox:checked)')
+                    .each(function () {
+                        var $row = $(this);
+                        var export_row = [];
                         $.each(export_columns_keys, function () {
-                            var $cell = $row.find('td[data-field="' + this + '"]')
-                            var $cellcheckbox = $cell.find('.o_checkbox input[type=checkbox]');
+                            var $cell = $row.find(
+                                'td.o_data_cell:eq('+this+')');
+                            var $cellcheckbox = $cell.find(
+                                '.o_checkbox input:checkbox');
                             if ($cellcheckbox.length) {
-                                if ($cellcheckbox.is(':checked')) {
-                                    export_row.push(_t("True"));
-                                }
-                                else {
-                                    export_row.push(_t("False"));
-                                }
-                            }
-                            else {
-                                var cell = $cell.get(0);
-                                var text = cell.text || cell.textContent || cell.innerHTML || "";
-
-                                if (cell.classList.contains("o_list_number")) {
-                                    var tmp2 = text;
-                                    do {
-                                        var tmp = tmp2;
-                                        tmp2 = tmp.replace(_t.database.parameters.thousands_sep, "");
-                                    } while (tmp !== tmp2);
-                                    tmp2 = tmp.replace(_t.database.parameters.decimal_point, ".");
-                                    export_row.push(parseFloat(tmp2));
-                                }
-                                else {
-                                    export_row.push(text.trim());
+                                export_row.push(
+                                    $cellcheckbox.is(":checked")
+                                        ? _t("True") : _t("False")
+                                );
+                            } else {
+                                var text = $cell.text().trim();
+                                var is_number =
+                                    $cell.hasClass('o_list_number') &&
+                                    !$cell.hasClass('o_float_time_cell');
+                                if (is_number) {
+                                    var db_params = _t.database.parameters;
+                                    export_row.push(parseFloat(
+                                        text
+                                        // Remove thousands separator
+                                            .split(db_params.thousands_sep)
+                                            .join("")
+                                            // Always use a `.` as decimal
+                                            // separator
+                                            .replace(db_params.decimal_point,
+                                                ".")
+                                            // Remove non-numeric characters
+                                            .replace(/[^\d.-]/g, "")
+                                    ));
+                                } else {
+                                    export_row.push(text);
                                 }
                             }
                         });
                         export_rows.push(export_row);
-                    }
-                }
-            });
-            $.blockUI();
-            view.session.get_file({
+                    });
+            }
+
+            session.get_file({
                 url: '/web/export/xls_view',
-                data: {data: JSON.stringify({
-                    model: view.model,
-                    headers: export_columns_names,
-                    rows: export_rows
-                })},
-                complete: $.unblockUI
+                data: {
+                    data: JSON.stringify({
+                        model: view.modelName,
+                        headers: export_columns_names,
+                        rows: export_rows,
+                    }),
+                },
+                complete: $.unblockUI,
+                error: c.rpc_error.bind(c),
             });
-        }
+        },
 
     });
 });
