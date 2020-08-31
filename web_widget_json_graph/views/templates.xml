@@ -11,11 +11,6 @@
                 type="text/javascript"
                 src="/web_widget_json_graph/static/src/js/web_widget_json_graph.js"
             />
-            <link
-                rel="stylesheet"
-                type="text/scss"
-                href="/web_widget_json_graph/static/src/scss/web_widget_json_graph.scss"
-            />
         </xpath>
     </template>
 </odoo>
