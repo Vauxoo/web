@@ -1,2 +1,3 @@
 # web_widget_bokeh_chart
-bokeh==1.1.0
+# commented since that it is installing numpy :(
+# bokeh==1.1.0
